@@ -1,5 +1,16 @@
+import POJO.Location;
+import io.restassured.builder.RequestSpecBuilder;
+import io.restassured.builder.ResponseSpecBuilder;
+import io.restassured.filter.log.LogDetail;
 import io.restassured.http.ContentType;
+import io.restassured.response.Response;
+import io.restassured.specification.RequestSpecification;
+import io.restassured.specification.ResponseSpecification;
+import org.testng.Assert;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
+
+import java.util.List;
 
 import static io.restassured.RestAssured.*;
 import static org.hamcrest.Matchers.*;
@@ -65,7 +76,7 @@ public class ZippoTest {
         ;
 
     }
-
+//JSON serialize  Class yapısındaki bilgiyi JSON a dönüştürmek  Class -> JSON
     //pm                              RestAssured
     //body.country                    body("country",
     //body.'post code'                body("post code",
@@ -89,7 +100,7 @@ public class ZippoTest {
     }
 
     @Test
-    public void checkStateInResponseTest3() {
+    public void bodyJsonPathTest3() {
 
         given()
 
@@ -217,4 +228,158 @@ public class ZippoTest {
         ;
         }
     }
+
+    RequestSpecification requestSpec;
+    ResponseSpecification responseSpec;
+    @BeforeClass
+    void Setup(){
+
+        baseURI="https://gorest.co.in/public/v1";
+
+        requestSpec = new RequestSpecBuilder()
+                .log(LogDetail.URI)
+                .setContentType(ContentType.JSON)
+                .build();
+
+        responseSpec = new ResponseSpecBuilder()
+                .expectStatusCode(200)
+                .expectContentType(ContentType.JSON)
+                .log(LogDetail.BODY)
+                .build();
+    }
+    @Test
+    public void requestResponseSpecification() {
+        //https://gorest.co.in/public/v1/users?page=3
+
+        given()
+                .param("page",1)
+                .spec(requestSpec)
+
+                .when()
+                .get("/users") // http olsaydi baseUri kullanmilmazdi
+
+                .then()
+                .body("meta.pagination.page", equalTo(1))
+                .spec(responseSpec)
+        ;
+    }
+    //Json exract
+    @Test
+    public void extractingJsonPath(){
+
+        String placeName=
+        given()
+
+                .when()
+                .get("http://api.zippopotam.us/us/90210")
+
+                .then()
+                .statusCode(200)
+              //  .log().body()
+                .extract().path("places[0].'place name'")
+        // exract metodu ile given ile baslayan satir,
+        // bir deger dondurur hale geldi, exract en sonda olmali
+        ;
+
+        System.out.println("placeName = " + placeName);
+    }
+    @Test
+    public void extractingJsonPathInt(){
+        // alinacak tipin degerine en uygun olan karsiliktaki tip yazilir
+        int limit=
+                given()
+
+                        .when()
+                        .get("https://gorest.co.in/public/v1/users")
+
+                        .then()
+                        .statusCode(200)
+                        //  .log().body()
+                        .extract().path("meta.pagination.limit")
+                ;
+        System.out.println("limit = " + limit);
+        Assert.assertEquals(limit,10,"test sonucu");
+    }
+
+    @Test
+    public void extractingJsonPathList(){
+        // alinacak tipin degerine en uygun olan karsiliktaki tip yazilir
+        List<Integer> idler=
+                given()
+
+                        .when()
+                        .get("https://gorest.co.in/public/v1/users")
+
+                        .then()
+                        .statusCode(200)
+                        //  .log().body()
+                        .extract().path("data.id")
+                ;
+        System.out.println("idler = " + idler);
+        Assert.assertTrue(idler.contains(4235));
+    }
+
+    @Test
+    public void extractingJsonPathStringList(){
+
+        List<String> names=
+                given()
+
+                        .when()
+                        .get("https://gorest.co.in/public/v1/users")
+
+                        .then()
+                        .statusCode(200)
+                        //  .log().body()
+                        .extract().path("data.name")
+                ;
+        System.out.println("names = " + names);
+        Assert.assertTrue(names.contains("Gautam Ahluwalia"));
+    }
+    @Test
+    public void extractingJsonPathStringResponseAll(){
+
+     Response response=
+                given()
+
+                        .when()
+                        .get("https://gorest.co.in/public/v1/users")
+
+                        .then()
+                        .statusCode(200)
+                        //  .log().body()
+                        .extract().response() // butun body alindi
+                ;
+            List<Integer> idler=response.path("data.id");
+            List<String> names=response.path("data.name");
+            int limit= response.path("meta.pagination.limit");
+
+        System.out.println("response= "+ response.prettyPrint()); // body yazdiriliyor bu sekilde
+        System.out.println("idler = " + idler);
+        System.out.println("names = " + names);
+        System.out.println("limit = " + limit);
+
+        Assert.assertTrue(names.contains("Gautam Ahluwalia"));
+        Assert.assertTrue(idler.contains(4235));
+        Assert.assertEquals(limit,10,"test sonucu");
+    }
+    @Test
+    public void extractingJsonPOJO(){
+//JSON DEserialize  JSON -> Class
+        Location yer=
+        given()
+
+                .when()
+                .get("http://api.zippopotam.us/us/90210")
+
+                .then()
+                //.log().body()
+                .extract().as(Location.class) // location class yapisina gore/ sablonuna gore
+        ;
+        System.out.println("yer.getPostCode() = " + yer.getPostCode());
+        System.out.println("yer.getPlaces().get(0).getPlaceName() = " + yer.getPlaces().get(0).getPlaceName());
+
+    }
+    
+
 }
