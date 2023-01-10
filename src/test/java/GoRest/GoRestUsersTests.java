@@ -159,10 +159,5 @@ public class GoRestUsersTests {
                         .contentType(ContentType.JSON)
                         .body("id", equalTo(userID))
         ;
-
-
-
-        // path : class veya tip dönüşümüne imkan veremeyen direkt veriyi verir. List<String> gibi
-        // jsonPath : class dönüşümüne ve tip dönüşümüne izin vererek , veriyi istediğimiz formatta verir.
     }
 }
