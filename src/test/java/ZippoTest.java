@@ -364,7 +364,7 @@ public class ZippoTest {
         Assert.assertEquals(limit,10,"test sonucu");
     }
     @Test
-    public void extractingJsonPOJO(){
+    public void extractingJsonPOJO(){ // POJO: JSON Object - Plain Old Java Object tam acilimi
 //JSON DEserialize  JSON -> Class
         Location yer=
         given()
