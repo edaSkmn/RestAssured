@@ -1,6 +1,5 @@
 package Campus;
 
-
 import Campus.Model.Country;
 import io.restassured.http.ContentType;
 import io.restassured.http.Cookies;
@@ -57,10 +56,15 @@ public class CountryTest {
 
     @Test
     public void createCountry(){
-        Country country=new Country();
-        country.setName(getRandomName());
-        country.setCode(getRandomCode());
 
+        countryName=getRandomName();
+        countryCode=getRandomCode();
+
+        Country country=new Country();
+        country.setName(countryName);
+        country.setCode(countryCode);
+
+        countryID=
         given()
 
                 .cookies(cookies)
@@ -73,12 +77,116 @@ public class CountryTest {
                 .then()
                 .log().body()
                 .statusCode(201)
+                .extract().jsonPath().getString("id")
         ;
     }
 
-    @Test
+    @Test(dependsOnMethods = "createCountry", priority = 1)
     public void createCountryNegative(){
 
+        Country country=new Country();
+        country.setName(countryName);
+        country.setCode(countryCode);
+
+        given()
+                .cookies(cookies)
+                .contentType(ContentType.JSON)
+                .body(country)
+
+                .when()
+                .post("school-service/api/countries")
+
+                .then()
+                .log().body()
+                .statusCode(400)
+                .body("message",equalTo("The Country with Name \""+countryName+"\" already exists."))
+        ;
+    }
+    @Test(dependsOnMethods = "createCountry", priority = 2)
+    public void updateCountry(){
+
+        countryName=getRandomName();
+        countryCode=getRandomCode();
+
+        Country country=new Country();
+        country.setId(countryID);
+        country.setName(countryName);
+        country.setCode(countryCode);
+
+        given()
+                .cookies(cookies)
+                .contentType(ContentType.JSON)
+                .body(country)
+
+                .when()
+                .put("school-service/api/countries")
+
+                .then()
+                .log().body()
+                .statusCode(200)
+                .body("name",equalTo(countryName))
+        ;
+    }
+    @Test(dependsOnMethods = "updateCountry")
+    public void deleteCountryById(){
+
+        given()
+                .cookies(cookies)
+                .pathParam("countryID",countryID)
+                .log().uri()
+
+                .when()
+                .delete("school-service/api/countries/{countryID}")
+
+                .then()
+                .log().body()
+                .statusCode(200)
+        ;
+    }
+    @Test(dependsOnMethods = "deleteCountryById")
+    public void deleteCountryByNegative(){
+
+        given()
+                .cookies(cookies)
+                .pathParam("countryID",countryID)
+                .log().uri()
+
+                .when()
+                .delete("school-service/api/countries/{countryID}")
+
+                .then()
+                .log().body()
+                .statusCode(400)
+                .body("message",equalTo("Country not found"))
+        ;
+    }
+
+    // task: Silinmis bir ulkeyi update etmeye calisiniz : updateCountryNegative
+    @Test(dependsOnMethods = "deleteCountryById")
+    public void updateCountryNegative() {
+        countryName = getRandomName();
+        countryCode = getRandomCode();
+
+        Country country = new Country();
+        country.setId(countryID);
+        country.setName(countryName);
+        country.setCode(countryCode);
+
+        given()
+                .cookies(cookies)
+                .contentType(ContentType.JSON)
+                .body(country)
+
+                .when()
+                .put("school-service/api/countries")
+
+                .then()
+                .log().body()
+                .statusCode(400)
+                .body("message", equalTo("Country not found"))
+        ;
     }
 
 }
+
+
